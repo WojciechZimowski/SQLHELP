@@ -1,0 +1,159 @@
+1. Utwórz kopię tabeli emp
+sql
+Kopiuj
+Edytuj
+CREATE TABLE emp_copy AS SELECT * FROM emp;
+2. Dodaj wiersz z 2 kolumnami
+sql
+Kopiuj
+Edytuj
+INSERT INTO emp(id, last_name) VALUES (emp_seq.NEXTVAL, 'Nowak');
+3. Dodaj 2 pełne wiersze do emp_copy
+sql
+Kopiuj
+Edytuj
+INSERT INTO emp_copy SELECT * FROM emp WHERE ROWNUM <= 2;
+4. Dodaj dane z customer do emp_copy_2
+sql
+Kopiuj
+Edytuj
+INSERT INTO emp_copy_2 (id, name, city, country)
+SELECT id, name, city, country FROM customer;
+5. Uzupełnij wcześniej dodany wiersz
+sql
+Kopiuj
+Edytuj
+UPDATE emp
+SET first_name = 'Jan', salary = 4000, dept_id = 10
+WHERE last_name = 'Nowak';
+6. Podnieś pensje dla Stock Clerk
+sql
+Kopiuj
+Edytuj
+UPDATE emp
+SET salary = salary + 999.5
+WHERE job = 'Stock Clerk';
+7. Usuń nowo dodany wiersz
+sql
+Kopiuj
+Edytuj
+DELETE FROM emp WHERE last_name = 'Nowak';
+8. Usuń wszystkie wiersze z emp_copy
+sql
+Kopiuj
+Edytuj
+DELETE FROM emp_copy;
+9. Zmień nazwę tabeli
+sql
+Kopiuj
+Edytuj
+RENAME emp_copy TO pracownicy;
+10. Usuń tabelę
+sql
+Kopiuj
+Edytuj
+DROP TABLE pracownicy;
+11. Podnieś płacę tym, co zarabiają < 1100
+sql
+Kopiuj
+Edytuj
+UPDATE emp
+SET salary = salary + (SELECT 0.10 * AVG(salary) FROM emp)
+WHERE salary < 1100;
+12. Utwórz tabelę Osoby bez constraintów
+sql
+Kopiuj
+Edytuj
+CREATE TABLE Osoby (
+  osoba_id        NUMBER(9),
+  imie            VARCHAR2(19),
+  nazwisko        VARCHAR2(29),
+  plec            CHAR,
+  data_urodzenia  DATE,
+  zarobki         NUMBER(9,2)
+);
+13. Dodaj kolumnę stanowisko_id
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby ADD stanowisko_id VARCHAR2(50);
+14. Zmień typ danych tej kolumny
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby MODIFY stanowisko_id VARCHAR2(15 CHAR);
+15. Dodaj ograniczenie długości (CHECK)
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby ADD CONSTRAINT chk_stanowisko_id CHECK (REGEXP_LIKE(stanowisko_id, '^\d{4,}$'));
+16. Zmień nazwę kolumny
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby RENAME COLUMN stanowisko_id TO numer_stanowiska;
+17. Usuń kolumnę
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby DROP COLUMN numer_stanowiska;
+18a. Utwórz tabelę Stanowiska
+sql
+Kopiuj
+Edytuj
+CREATE TABLE Stanowiska (
+  nazwa_stanowiska VARCHAR2(25) PRIMARY KEY
+);
+18b. Utwórz Osoby z ograniczeniami (metoda kolumnowa)
+sql
+Kopiuj
+Edytuj
+CREATE TABLE Osoby (
+  osoba_id         NUMBER(9) PRIMARY KEY,
+  imie             VARCHAR2(19) NOT NULL,
+  nazwisko         VARCHAR2(29) NOT NULL,
+  plec             CHAR CHECK (LOWER(plec) IN ('k', 'm')),
+  data_urodzenia   DATE,
+  zarobki          NUMBER(9,2) CHECK (zarobki <= 4800),
+  pesel            VARCHAR2(11) UNIQUE,
+  stanowisko_id    NUMBER(9),
+  nazwa_stanowiska VARCHAR2(25),
+  CONSTRAINT fk_nazwa_stanowiska FOREIGN KEY (nazwa_stanowiska) REFERENCES Stanowiska(nazwa_stanowiska)
+);
+18c. Dodaj FK metodą ALTER TABLE (dla stanowisko_id)
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby ADD CONSTRAINT fk_stanowisko_id FOREIGN KEY (stanowisko_id) REFERENCES Stanowiska(rowid);
+19. Usuń ograniczenie FK
+sql
+Kopiuj
+Edytuj
+ALTER TABLE Osoby DROP CONSTRAINT fk_stanowisko_id;
+20. Funkcja – minimalne zamówienie dla klienta
+sql
+Kopiuj
+Edytuj
+CREATE OR REPLACE FUNCTION min_total_order(p_customer_id IN NUMBER) RETURN NUMBER IS
+  result NUMBER;
+BEGIN
+  SELECT MIN(total) INTO result FROM ord WHERE customer_id = p_customer_id;
+  RETURN result;
+END;
+/
+-- Wywołanie:
+SELECT min_total_order(1) FROM dual;
+21. Anonimowy blok – zamówienia z min/max total
+sql
+Kopiuj
+Edytuj
+DECLARE
+  min_total NUMBER;
+  max_total NUMBER;
+BEGIN
+  SELECT MIN(total), MAX(total) INTO min_total, max_total FROM ord;
+  FOR rec IN (SELECT id FROM ord WHERE total = min_total OR total = max_total) LOOP
+    DBMS_OUTPUT.PUT_LINE('Order ID: ' || rec.id);
+  END LOOP;
+END;
+/
